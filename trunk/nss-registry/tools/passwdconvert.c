@@ -35,6 +35,7 @@ void showhelp(void);
 void SetValue(char *key, char *value, int mode);
 void debugprint(const char *format, ...);
 int userexists(int type,const  char *name);
+void SetIDLink(int mode, void *pw);
 
 #define USERFLAG 0x1
 #define SHADOWFLAG 0x2
@@ -139,6 +140,7 @@ printf("Adding User entries...\n");
 			spw = getspnam(pw->pw_name);
 		}
 		adduser(pw, spw);
+		SetIDLink(REGISTRYUSER, pw);
 		pw = NULL;
 		spw = NULL;
 	}
@@ -195,7 +197,6 @@ SetValue(key, pw->pw_gecos,-1);
 
 snprintf(key,1023,"%s/users/%s/shell", root, pw->pw_name);
 SetValue(key, pw->pw_shell,-1);
-
 }
 
 /* Add Shadow Entries 
@@ -275,6 +276,7 @@ if(options & GROUPFLAG)
 			}
                 }
 		addgroup(gr);
+		SetIDLink(REGISTRYGROUP, gr);
 	}
 }
 }
@@ -355,4 +357,44 @@ va_start(args, format);
 vprintf(format, args);
 va_end(args);
 #endif
+}
+
+/* SetIDLink:
+ * Sets link from .ByID/<uid> to name. */
+void SetIDLink(int mode, void *data)
+{
+char keyname[1024];
+char linkname[1024];
+int ret;
+char *errorstring=NULL;
+if(mode == REGISTRYGROUP)
+{
+struct group *gr;
+gr = (struct group *)data;
+snprintf(keyname, 1023, "%s/groups/%s",root,  gr->gr_name);
+snprintf(linkname, 1023, "%s/groups/.ByID/%li",root, gr->gr_gid);
+ret = registryLink(keyname, linkname);
+debugprint("Adding grouplink from %s to %s\nReturned %d\n",linkname, keyname, ret);
+if (ret != 0)
+{
+        errorstring = strerror(errno);
+	debugprint("Error: (%d) = %s\n",errno, errorstring);
+}
+
+} else if(mode == REGISTRYUSER)
+{
+struct passwd *pw;
+pw = (struct passwd *)data;
+snprintf(keyname, 1023, "%s/users/%s", root, pw->pw_name);
+snprintf(linkname, 1023, "%s/users/.ByID/%li",root, pw->pw_uid);
+ret = registryLink(keyname, linkname);
+debugprint("Adding userlink from %s to %s\nReturned %d\n",linkname, keyname,  ret);
+if (ret != 0)
+{
+        errorstring = strerror(errno);
+        debugprint("Error: (%d) = %s\n",errno, errorstring);
+}
+
+}
+/* Do nothing if it's not user or group...in case of new additions later */
 }
