@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: group.c,v 1.6 2004/05/10 11:42:43 rayman Exp $ 
+ * $Id: group.c,v 1.7 2004/05/22 13:26:28 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -266,15 +266,16 @@ _nss_registry_setgrent (void)
 NSS_STATUS
 _nss_registry_endgrent (void)
 {
-  if (groupks != NULL || groupkey != NULL)
+  if (groupks != NULL)
     {
       ksClose (groupks);
       free (groupks);
-/*keyClose(groupkey);
-free(groupkey);
-free(groupks);*/
       groupks = NULL;
       groupkey = NULL;
+    } else if(groupkey != NULL)
+    {
+      keyClose(groupkey);
+      free(groupkey);
     }
   return NSS_STATUS_SUCCESS;
 }

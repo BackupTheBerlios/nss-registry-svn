@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: shadow.c,v 1.6 2004/05/10 11:42:43 rayman Exp $ 
+ * $Id: shadow.c,v 1.7 2004/05/22 13:26:28 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -322,15 +322,17 @@ _nss_registry_setspent (void)
 NSS_STATUS
 _nss_registry_endspent (void)
 {
-  if (shadowks != NULL || shadowkey != NULL)
+  if (shadowks != NULL)
     {
       ksClose (shadowks);
-/*keyClose(shadowkey);
-free(shadowkey);*/
       if (shadowks != NULL)
 	free (shadowks);
       shadowks = NULL;
       shadowkey = NULL;
+    } else if(shadowkey != NULL)
+    {
+      keyClose(shadowkey);
+      free(shadowkey);
     }
   return NSS_STATUS_SUCCESS;
 }

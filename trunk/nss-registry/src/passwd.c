@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: passwd.c,v 1.6 2004/05/10 11:42:43 rayman Exp $ 
+ * $Id: passwd.c,v 1.7 2004/05/22 13:26:28 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -292,15 +292,16 @@ _nss_registry_setpwent (void)
 NSS_STATUS
 _nss_registry_endpwent (void)
 {
-  if (ks == NULL || key == NULL)
+  if (ks != NULL)
     {
       ksClose (ks);
-/* ksClose should close all attached keys */
-/*keyClose(key);
-free(key);*/
       free (ks);
       ks = NULL;
       key = NULL;
+    } else if(key != NULL)
+    {
+	keyClose(key);
+	free(key);
     }
   return NSS_STATUS_SUCCESS;
 }
