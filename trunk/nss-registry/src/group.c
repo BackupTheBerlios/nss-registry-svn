@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: group.c,v 1.3 2004/04/22 11:41:11 rayman Exp $ 
+ * $Id: group.c,v 1.4 2004/04/22 12:00:48 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -94,10 +94,14 @@ gr->gr_gid =_nss_registry_strtol(tmpbuf,
 if(tmpbuf != NULL)
 	free(tmpbuf);
 tmpbuf = _nss_registry_get_string(REGISTRYGROUP, gr->gr_name, "passwd");
-if(_nss_registry_isempty)
+if(_nss_registry_isempty(tmpbuf))
 {
 	/* Password isn't set so set it to "x" */
 	gr->gr_passwd = _nss_registry_copy_to_buffer(&buffer,&buflen, "x");
+	/* Since isempty also checks if it just contains spaces I better 
+	 * free this */
+	if(tmpbuf != NULL)
+		free(tmpbuf);
 } else
 {
 	gr->gr_passwd = _nss_registry_copy_to_buffer(&buffer,&buflen, tmpbuf);
@@ -182,6 +186,8 @@ if((_nss_registry_findgroupbygid(gid,&groupname)) == NSS_STATUS_NOTFOUND) return
 /* Due to the way the registry is made it's far more efficient to work with
  * usernames only, hence once we have the username for a uid we might as well 
  * just pass it on to getspnam
+ *
+ * Possibly some kind of uid/username caching for easy/quick lookup?
 */
 registryClose();
 tmpstatus = _nss_registry_getgrnam_r(groupname, gr, buffer, buflen, errnop);
@@ -242,9 +248,9 @@ return NSS_STATUS_SUCCESS;
 NSS_STATUS _nss_registry_getgrent_r (struct group *gr, char * buffer, 
 		size_t buflen,int * errnop)
 {
-Key *tempkey;
+Key *tempkey=NULL;
 int groupnamesize;
-char *groupname;
+char *groupname=NULL;
 NSS_STATUS tmpstatus;
 /* Hmm..I wonder if I should start it implicitly when this function is
  * called without setent */
