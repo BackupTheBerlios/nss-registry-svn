@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: passwd.c,v 1.3 2004/04/22 11:41:11 rayman Exp $ 
+ * $Id: passwd.c,v 1.4 2004/04/22 12:42:12 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -81,8 +81,10 @@ pw->pw_passwd =  (char *)_nss_registry_copy_to_buffer(&buffer,&buflen,tmpbuf);
 free(tmpbuf);
 } else
 {
-/* We assume shadow if tmpbuf is NULL */
+/* We assume shadow if tmpbuf is empty...but check if it's null and free if not */
 pw->pw_passwd =  (char *)_nss_registry_copy_to_buffer(&buffer,&buflen,"x");
+if(tmpbuf != NULL)
+	free(tmpbuf);
 }
 if (! pw->pw_passwd)
 	goto out_nomem;
@@ -97,8 +99,8 @@ _nss_registry_log(LOG_ERR,"User %s has invalid uid(%s). "
 			  pw->pw_name, tmpbuf||"NULL",
 			  pw->pw_uid);
 }
-
-free(tmpbuf);
+if(tmpbuf != NULL)
+	free(tmpbuf);
 
 tmpbuf = _nss_registry_get_string(REGISTRYUSER, pw->pw_name,"gid");
 pw->pw_gid = _nss_registry_strtol(tmpbuf,FALLBACK_GID,&i);
@@ -113,13 +115,12 @@ if(tmpbuf != NULL)
 	free(tmpbuf);
 
 tmpbuf = _nss_registry_get_string(REGISTRYUSER, pw->pw_name,"gecos");
+/* if tmpbuf is null just set it to an empty string*/
 pw->pw_gecos = _nss_registry_copy_to_buffer(&buffer,&buflen, 
 			tmpbuf 
 			? tmpbuf : "");
 if(tmpbuf != NULL)
 	free(tmpbuf);
-else 
-	goto out_nomem;
 
 tmpbuf = _nss_registry_get_string(REGISTRYUSER, pw->pw_name,"home");
 if (_nss_registry_isempty(tmpbuf)) 
@@ -130,6 +131,8 @@ if (_nss_registry_isempty(tmpbuf))
                                 pw->pw_name,pw->pw_uid);
 	pw->pw_dir =  _nss_registry_copy_to_buffer(&buffer,&buflen,
                                          FALLBACK_TMP);
+	if(tmpbuf != NULL)
+		free(tmpbuf);
 } else 
 {
 	pw->pw_dir =  _nss_registry_copy_to_buffer(&buffer,&buflen,
@@ -148,6 +151,8 @@ if (_nss_registry_isempty(tmpbuf))
                                 pw->pw_name,pw->pw_uid);
 	pw->pw_shell =  _nss_registry_copy_to_buffer(&buffer,&buflen,
                                 FALLBACK_SHELL);
+	if(tmpbuf != NULL)
+		free(tmpbuf);
 } else
 {
 pw->pw_shell = _nss_registry_copy_to_buffer(&buffer,&buflen,tmpbuf);
@@ -185,6 +190,9 @@ if((_nss_registry_finduserbyuid(uid,&username)) == NSS_STATUS_NOTFOUND) return N
 /* Due to the way the registry is made it's far more efficient to work with
  * usernames only, hence once we have the username for a uid we might as well 
  * just pass it on to getpwnam
+ * 
+ * Again, some kind of caching would be quite useful since the uid lookup is
+ * quite expensive/slow.
 */
 registryClose();
 tmpstatus = _nss_registry_getpwnam_r(username, pw, buffer, buflen, errnop);
@@ -207,7 +215,7 @@ if(!ret)
 {
 	if(ks->size <= 0)
 	{
-		 _nss_registry_log(LOG_ERR,"Size of returned array < 0\n");
+		 _nss_registry_log(LOG_ERR,"No users in registry database!\n");
 		ksClose(ks);
 		free(ks);
 		ks = NULL;
@@ -215,7 +223,6 @@ if(!ret)
 		return NSS_STATUS_NOTFOUND;
 	}
 	/* No error, return success! */
-	 _nss_registry_log(LOG_ERR,"Success. Setting key to ks->start: %li\n",ks->start);
 	key = ks->start;
 	registryClose();
 	return NSS_STATUS_SUCCESS;
@@ -236,8 +243,7 @@ ksClose(ks);
 /* ksClose should close all attached keys */
 /*keyClose(key);
 free(key);*/
-if (ks != NULL)
-	free(ks);
+free(ks);
 ks = NULL;
 key = NULL;
 }
@@ -248,9 +254,9 @@ return NSS_STATUS_SUCCESS;
 NSS_STATUS _nss_registry_getpwent_r (struct passwd *pw, char * buffer, 
 		size_t buflen,int * errnop)
 {
-Key *tempkey;
-int usernamesize;
-char *username;
+Key *tempkey=NULL;
+int usernamesize=0;
+char *username=NULL;
 NSS_STATUS tmpstatus;
 /* Hmm..I wonder if I should start it implicitly when this function is
  * called without setent */

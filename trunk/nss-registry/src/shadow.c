@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: shadow.c,v 1.3 2004/04/22 11:41:11 rayman Exp $ 
+ * $Id: shadow.c,v 1.4 2004/04/22 12:42:12 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -81,8 +81,10 @@ pw->sp_pwdp =  (char *)_nss_registry_copy_to_buffer(&buffer,&buflen,tmpbuf);
 free(tmpbuf);
 } else
 {
-/* If password is empty, set it to an empty string..If it's still empty, fail */
-pw->sp_pwdp =  (char *)_nss_registry_copy_to_buffer(&buffer,&buflen,"");
+/* If password is empty, set it to ! indication no password */
+pw->sp_pwdp =  (char *)_nss_registry_copy_to_buffer(&buffer,&buflen,"!");
+if(tmpbuf != NULL)
+free(tmpbuf);
 } 
 
 if(!pw->sp_pwdp)
@@ -188,6 +190,9 @@ if((_nss_registry_finduserbyuid(uid,&username)) == NSS_STATUS_NOTFOUND) return N
 /* Due to the way the registry is made it's far more efficient to work with
  * usernames only, hence once we have the username for a uid we might as well 
  * just pass it on to getspnam
+ *
+ * Again caching would be nice (just of uid/username combination)..
+ * Perhaps in the finduserbyuid function..
 */
 registryClose();
 tmpstatus = _nss_registry_getspnam_r(username, pw, buffer, buflen, errnop);
@@ -248,9 +253,9 @@ return NSS_STATUS_SUCCESS;
 NSS_STATUS _nss_registry_getspent_r (struct spwd *pw, char * buffer, 
 		size_t buflen,int * errnop)
 {
-Key *tempkey;
+Key *tempkey=NULL;
 int usernamesize;
-char *username;
+char *username=NULL;
 NSS_STATUS tmpstatus;
 /* Hmm..I wonder if I should start it implicitly when this function is
  * called without setent */
