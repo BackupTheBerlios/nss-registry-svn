@@ -159,7 +159,10 @@ _nss_registry_finduserbyuid (uid_t uid, char **name)
   keySetName (&key, keyname);
   ret = registryStatKey (&key);
   if (ret != 0)
-    return NSS_STATUS_NOTFOUND;
+  {
+     _D(LOG_ERR, "Uid %li doesn't exist\n", uid);
+     return NSS_STATUS_NOTFOUND;
+  }
   if (keyGetType (&key) != RG_KEY_TYPE_LINK)
     {
       _nss_registry_log (LOG_ERR,
@@ -172,13 +175,14 @@ _nss_registry_finduserbyuid (uid_t uid, char **name)
   linksize = keyGetDataSize (&key);
   link = (char *) malloc (linksize);
   keyGetLink (&key, link, linksize);
+  _D(LOG_ERR, "Got link for UID %li pointing to %s\n", uid, link);
   p = rindex (link, '/');
   if (p != NULL)
     {
       p++;
       *name = strdup (p);
       status = NSS_STATUS_SUCCESS;
-    }
+    } else _D(LOG_ERR, "Error in link, no /. Unable to find username\n");
   keyClose (&key);
   p = NULL;
   free (link);

@@ -8,9 +8,9 @@
 #define REGISTRYGROUP 1
 
 #ifdef DEBUG
-#define _D(x) _nss_registry_log(LOG_ERR, x);
+#define _D _nss_registry_log
 #else
-#define _D(x)
+#define _D
 #endif
 
 extern char *_nss_registry_get_string (int type, char *username,
