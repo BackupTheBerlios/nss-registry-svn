@@ -126,7 +126,7 @@ printf("Adding User entries...\n");
 	while((pw = getpwent()) != NULL)
 	{
 		/* Hrm..this might not be completely correct */
-                if (options & ~UPDATEFLAG)
+                if (!(options & UPDATEFLAG))
                 {
                         if(userexists(REGISTRYUSER, pw->pw_name))
 			{
@@ -151,7 +151,7 @@ printf("Adding User entries...\n");
         setpwent();
         while((spw = getspent()) != NULL)
         {
-		if (options & ~UPDATEFLAG)
+		if (!(options & UPDATEFLAG))
                 {
                         if(userexists(REGISTRYUSER, spw->sp_namp))
 			{
