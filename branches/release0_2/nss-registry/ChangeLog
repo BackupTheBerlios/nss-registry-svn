@@ -1,0 +1,7 @@
+0.1: First release
+
+0.2: Changes:
+* Changed getpwuid/getspuid/getgrgid functions to use the new .ByID tree.
+* Changed passwdconvert application to have many more options, 
+  better error checking and to create the new .ByID tree.
+* Added addtestuser.sh script to distribution
