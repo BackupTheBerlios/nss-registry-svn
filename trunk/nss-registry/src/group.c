@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: group.c,v 1.1 2004/04/22 11:10:52 rayman Exp $ 
+ * $Id: group.c,v 1.2 2004/04/22 11:22:52 rayman Exp $ 
 */
 
 #include <stdlib.h>
