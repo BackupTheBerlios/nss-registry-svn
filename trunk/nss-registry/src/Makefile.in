@@ -14,6 +14,10 @@
 
 @SET_MAKE@
 
+# Svn Stuff
+# $Id: Makefile.am 36 2004-06-12 12:19:09Z rayman $
+# $LastChangedBy: rayman $
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
