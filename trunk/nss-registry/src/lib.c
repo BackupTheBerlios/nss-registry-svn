@@ -1,6 +1,6 @@
 /* Nss-registry
 *  Copyright (C) 2004 Jens Andersen <rayman@skumler.net>
-*  Portions taken from nss-registry is copyrighted as below :
+*  Portions taken from nss-mysql is copyrighted as below :
 *  Copyright (C) 2000 Steve Brown
 *  Copyright (C) 2000,2001,2002 Guillaume Morin, Alc▒ve
 *
