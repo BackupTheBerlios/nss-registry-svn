@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Svn Stuff
+# $Id$
+# $LastChangedBy$
+
 #adding a user with the name of test with a blank password and a group name test.
 
 # We use uid 5000 and gid 5000 because it's unlike the user will already have that 

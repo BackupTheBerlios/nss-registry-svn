@@ -1,3 +1,7 @@
+# Svn stuff
+# $Id$
+# $LastChangedBy$
+
 #not sure what the hell I need CPP flags for since there is no cpp needed?
 #AM_CPPFLAGS = @CPPFLAGS@ -D_REENTRANT
 debug_parms = @debug_parms@

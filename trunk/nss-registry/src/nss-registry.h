@@ -1,3 +1,9 @@
+/* Svn stuff
+$Id$
+$LastChangedBy$
+*/
+
+
 #ifndef _HAVE_NSS_REGISTRY_H
 #define _HAVE_NSS_REGISTRY_H
 #include <registry.h>

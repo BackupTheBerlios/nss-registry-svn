@@ -1,3 +1,7 @@
+# Svn Stuff
+# $Id$
+# $LastChangedBy$
+
 #Version of package
 VERSION = @VERSION@
 

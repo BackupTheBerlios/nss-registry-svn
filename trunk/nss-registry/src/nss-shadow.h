@@ -1,6 +1,12 @@
 /*
- * shadowx.h for nss-registry.
+ * nss-shadow.h for nss-registry.
 */
+
+/* Svn stuff
+$Id$
+$LastChangedBy$
+*/
+
 
 #ifndef _HAVE_NSS_REGISTRY_SHADOW_H
 #define _HAVE_NSS_REGISTRY_SHADOW_H
