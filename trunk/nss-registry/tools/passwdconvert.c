@@ -65,7 +65,8 @@ while((opt = getopt(argc, argv, "ogsur:")) != -1)
 		 * Tells the program to add all entries under <root>/users 
 		 * and <root>/groups
 		 */
-		case 'r':	break;
+		case 'r':	printf("Using root %s\n",optarg);
+				break;
 	}
 }
 if(options == 0 || options == UPDATEFLAG)
