@@ -121,7 +121,7 @@ int ret;
 int linksize;
 char *link;
 char *p;
-NSS_STATUS status = NSS_STATUS_NOTFOUND;;
+NSS_STATUS status = NSS_STATUS_NOTFOUND;
 
 snprintf(keyname, 1023, "system/users/.ByID/%li", uid);
 keyInit(&key);
