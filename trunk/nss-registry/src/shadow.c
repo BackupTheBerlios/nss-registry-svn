@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: shadow.c,v 1.2 2004/04/22 11:22:52 rayman Exp $ 
+ * $Id: shadow.c,v 1.3 2004/04/22 11:41:11 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -31,10 +31,6 @@
 
 #include "nss-shadow.h"
 #include "lib.h"
-
-#ifdef DMALLOC
-        #include <dmalloc.h>
-#endif
 
 /* Taken from nss-mysql */
 #define FALLBACK -1 /* if the last change coloum can't be read,

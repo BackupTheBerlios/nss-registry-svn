@@ -36,10 +36,6 @@
 
 #include "lib.h"
 
-#ifdef DMALLOC
-        #include <dmalloc.h>
-#endif
-
 /*taken from nss-mysql */
 void _nss_registry_log(int err,const char *format, ...) 
 {

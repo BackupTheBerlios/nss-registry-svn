@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: passwd.c,v 1.2 2004/04/22 11:22:52 rayman Exp $ 
+ * $Id: passwd.c,v 1.3 2004/04/22 11:41:11 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -30,10 +30,6 @@
 
 #include "passwd.h"
 #include "lib.h"
-
-#ifdef DMALLOC
-        #include <dmalloc.h>
-#endif
 
 /* Taken from nss-mysql */
 #define FALLBACK_GID 65534 /* if the gid column can't be read,
