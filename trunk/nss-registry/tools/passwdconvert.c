@@ -24,18 +24,27 @@
 #include <shadow.h>
 #include <registry.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdarg.h>
 
 void addusers(int options);
 void adduser(struct passwd *pw, struct spwd *spw);
 void addgroups(int options);
 void addgroup(struct group *grp);
-
+void showhelp(void);
 void SetValue(char *key, char *value, int mode);
+void debugprint(const char *format, ...);
+int userexists(int type,const  char *name);
 
 #define USERFLAG 0x1
 #define SHADOWFLAG 0x2
 #define GROUPFLAG 0x4
 #define UPDATEFLAG 0x8
+
+#define REGISTRYUSER 0
+#define REGISTRYGROUP 1
+/* Global variable containing the "root" key string. (i.e. default is system)*/
+char *root=NULL;
 
 int main(int argc, char *argv[])
 {
@@ -51,28 +60,53 @@ while((opt = getopt(argc, argv, "ogsur:")) != -1)
 	{
 		/* o = -userflag */
 		case 'o':	options &= ~USERFLAG;
+				debugprint("Minus Userflag\n");
 			break;
 		/* -groupflag */
 		case 'g':	options &= ~GROUPFLAG;
+				debugprint("Minus Groupflag\n");
 			break;
 		/* -shadowflag */
 		case 's':	options &= ~SHADOWFLAG;
+				debugprint("Minus Shadowflag\n");
 			break;
 		/* -updateflag */
 		case 'u':	options &= ~UPDATEFLAG;
+				debugprint("Minus Updateflag\n");
 			break;
 		/* Set root to something else...for testing purposes 
 		 * Tells the program to add all entries under <root>/users 
 		 * and <root>/groups
 		 */
-		case 'r':	printf("Using root %s\n",optarg);
+		case 'r':	if(optarg != NULL) 
+					root = strdup(optarg);
+				/* Check if arg is valid here */
+				debugprint("Setting root to %s\n", root);
 				break;
+		case 'h':	showhelp();
+				return 0;
 	}
 }
 if(options == 0 || options == UPDATEFLAG)
 	options = (SHADOWFLAG | GROUPFLAG | USERFLAG | UPDATEFLAG);
 
-printf("Starting... Options = %d\n",options);
+if(root == NULL)
+{
+if(geteuid() != 0)
+{
+	showhelp();
+	return 0;
+}
+	debugprint("Defaulting root to system");
+	root = "system";
+} else if(geteuid() != 0 && (options & SHADOWFLAG))
+{
+        showhelp();
+        return 0;
+} 
+
+printf("Starting...\n");
+debugprint("Options = %d\n",options);
 registryOpen();
 addusers(options);
 addgroups(options);
@@ -90,15 +124,23 @@ printf("Adding User entries...\n");
 	setpwent();
 	while((pw = getpwent()) != NULL)
 	{
-		/*if(userexists(pw->pw_name))*/
+		/* Hrm..this might not be completely correct */
+                if (options & ~UPDATEFLAG)
+                {
+                        if(userexists(REGISTRYUSER, pw->pw_name))
+			{
+				debugprint("Update flag not set and user %s already exists\n", pw->pw_name);
+                                continue;
+			}
+                }
 		if (options & SHADOWFLAG)
 		{
 			printf("Retrieving Shadow entry for %s\n",pw->pw_name);
 			spw = getspnam(pw->pw_name);
 		}
 		adduser(pw, spw);
-/*		pw = NULL;
-		spw = NULL;*/
+		pw = NULL;
+		spw = NULL;
 	}
 	endpwent();
 } else if(options & SHADOWFLAG)
@@ -107,6 +149,15 @@ printf("Adding User entries...\n");
         setpwent();
         while((spw = getspent()) != NULL)
         {
+		if (options & ~UPDATEFLAG)
+                {
+                        if(userexists(REGISTRYUSER, spw->sp_namp))
+			{
+				debugprint("Update flag is not set and user %s already exists. Skipping\n", spw->sp_namp);
+				continue;
+			}
+                }
+
                 adduser(NULL, spw);
         }
 	if(errno)
@@ -125,24 +176,24 @@ char value[1024];
 if(pw != NULL)
 {
 printf("Adding user: %s\n",pw->pw_name);
-snprintf(key,1023,"system/users/%s/password",pw->pw_name);
+snprintf(key,1023,"%s/users/%s/password", root, pw->pw_name);
 SetValue(key, pw->pw_passwd, -1);
 
-snprintf(key,1023,"system/users/%s/uid",pw->pw_name);
+snprintf(key,1023,"%s/users/%s/uid", root, pw->pw_name);
 snprintf(value,1023,"%li",pw->pw_uid);
 SetValue(key, value,-1);
 
-snprintf(key,1023,"system/users/%s/gid",pw->pw_name);
+snprintf(key,1023,"%s/users/%s/gid", root, pw->pw_name);
 snprintf(value,1023,"%li",pw->pw_gid);
 SetValue(key, value, -1);
 
-snprintf(key,1023,"system/users/%s/home",pw->pw_name);
+snprintf(key,1023,"%s/users/%s/home", root, pw->pw_name);
 SetValue(key, pw->pw_dir,-1);
 
-snprintf(key,1023,"system/users/%s/gecos",pw->pw_name);
+snprintf(key,1023,"%s/users/%s/gecos", root, pw->pw_name);
 SetValue(key, pw->pw_gecos,-1);
 
-snprintf(key,1023,"system/users/%s/shell",pw->pw_name);
+snprintf(key,1023,"%s/users/%s/shell", root, pw->pw_name);
 SetValue(key, pw->pw_shell,-1);
 
 }
@@ -153,30 +204,30 @@ if(spw != NULL)
 {
 	printf("Adding shadow entry for %s\n",spw->sp_namp);
 
-	snprintf(key,1023,"system/users/%s/shadowPassword",spw->sp_namp);
+	snprintf(key,1023,"%s/users/%s/shadowPassword", root, spw->sp_namp);
 	SetValue(key, spw->sp_pwdp, 0600);
 	
-        snprintf(key,1023,"system/users/%s/passwdChangeBefore",spw->sp_namp);
+        snprintf(key,1023,"%s/users/%s/passwdChangeBefore", root, spw->sp_namp);
         snprintf(value,1023, "%li", spw->sp_min);
         SetValue(key, value, 0600);
 
-        snprintf(key,1023,"system/users/%s/passwdChangeAfter",spw->sp_namp);
+        snprintf(key,1023,"%s/users/%s/passwdChangeAfter", root, spw->sp_namp);
         snprintf(value,1023, "%li", spw->sp_max);
         SetValue(key, value, 0600);
 
-        snprintf(key,1023,"system/users/%s/passwdWarnBefore",spw->sp_namp);
+        snprintf(key,1023,"%s/users/%s/passwdWarnBefore", root, spw->sp_namp);
         snprintf(value,1023, "%li", spw->sp_warn);
         SetValue(key, value, 0600);
 
-        snprintf(key,1023,"system/users/%s/passwdDisableAfter",spw->sp_namp);
+        snprintf(key,1023,"%s/users/%s/passwdDisableAfter",root, spw->sp_namp);
         snprintf(value,1023, "%li", spw->sp_inact);
         SetValue(key, value, 0600);
 
-        snprintf(key,1023,"system/users/%s/passwdDisabledSince",spw->sp_namp);
+        snprintf(key,1023,"%s/users/%s/passwdDisabledSince", root, spw->sp_namp);
         snprintf(value,1023, "%li", spw->sp_expire);
         SetValue(key, value, 0600);
 
-        snprintf(key,1023,"system/users/%s/passwdReserved",spw->sp_namp);
+        snprintf(key,1023,"%s/users/%s/passwdReserved", root, spw->sp_namp);
         snprintf(value,1023, "%li", spw->sp_flag);
         SetValue(key, value, 0600);
 }
@@ -185,10 +236,12 @@ if(spw != NULL)
 void SetValue(char *keyname, char *value, int mode)
 {
 Key *key;
+int ret=0;
 /* mode -1 = standard access permissions */
 if(mode == -1)
 {
-	registrySetValue(keyname,value);
+	ret = registrySetValue(keyname,value);
+	debugprint("registrySetValue key=%s , value=%s\nReturned %d\n",keyname, value, ret);
 } else
 {
 /* Special Access permissions */
@@ -213,6 +266,14 @@ if(options & GROUPFLAG)
 	setgrent();
 	while((gr = getgrent()) != NULL)
 	{
+               if (options & ~UPDATEFLAG)
+                {
+                        if(userexists(REGISTRYGROUP, gr->gr_name))
+			{
+				debugprint("Update flag is not set and group %s already exist.\n",gr->gr_name);
+                                continue;
+			}
+                }
 		addgroup(gr);
 	}
 }
@@ -228,10 +289,10 @@ if(grp!=NULL)
 {
 	printf("Adding group %s\n",grp->gr_name);
 
-	snprintf(key,1023,"system/groups/%s/passwd",grp->gr_name);
+	snprintf(key,1023,"%s/groups/%s/passwd", root, grp->gr_name);
 	SetValue(key,grp->gr_passwd, -1);
 
-	snprintf(key,1023, "system/groups/%s/gid",grp->gr_name);
+	snprintf(key,1023, "%s/groups/%s/gid", root, grp->gr_name);
 	snprintf(value,1023, "%li",grp->gr_gid);
 	SetValue(key, value, -1);
 
@@ -245,10 +306,53 @@ if(grp!=NULL)
 		 * Either commaseperated in one file like /etc/group
 		 * or seperated entries for each member. */
 		printf("Adding member %s of group %s\n",*members,grp->gr_name);
-		snprintf(key,1023, "system/groups/%s/members/%s",grp->gr_name,(*members));
+		snprintf(key,1023, "%s/groups/%s/members/%s", root, grp->gr_name,(*members));
 		SetValue(key,*members, -1);
 		members++;
 	}
 	}
 }
+}
+
+
+void showhelp(void)
+{
+puts("Usage: passwdconvert [options]\n");
+puts("	-o Don't update user entries\n");
+puts("	-g Don't update group entries\n");
+puts("	-s Don't update shadow entries\n");
+puts("	-u Don't update data for already existing users\n");
+puts("	-r <root>  Use <root> as root for keys,\n	 i.e. data will be in <root>/users and <root>/groups\n");
+puts(" Note: You have to be root to use this program");
+}
+
+/* Checks if a user exists...Returns 0 if the user does exist and 
+ * 1 if it doesn't */
+int userexists(int type, const char *name)
+{
+char keypath[1024];
+Key key;
+int ret;
+/* If it's not registrygroup then assume it's user */
+if(type == REGISTRYGROUP)
+	snprintf(keypath,1023,"%s/groups/%s", root, name);
+else snprintf(keypath,1023,"%s/users/%s", root, name);
+
+keyInit(&key);
+keySetName(&key,keypath);
+ret = registryGetKey(&key);
+keyClose(&key);
+if(ret == 0) return 1;
+else return 0;
+}
+
+void debugprint(const char *format, ...)
+{
+#ifdef DEBUG
+va_list args;
+
+va_start(args, format);
+vprintf(format, args);
+va_end(args);
+#endif
 }

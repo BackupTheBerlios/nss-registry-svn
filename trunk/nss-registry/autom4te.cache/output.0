@@ -19509,7 +19509,7 @@ if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
   case "${enable_debug}" in
     yes) use_debug=1 
-	 debug_parms="-g3 -ggdb" ;;
+	 debug_parms="-g3 -ggdb -DDEBUG" ;;
     no) use_debug=0 ;;
     *) { { echo "$as_me:$LINENO: error: bad value ${enable_debug} for enable debug option" >&5
 echo "$as_me: error: bad value ${enable_debug} for enable debug option" >&2;}
