@@ -14,7 +14,7 @@
 #endif
 
 extern char *_nss_registry_get_string (int type, char *username,
-				       char *keyname);
+				       char *keyname, int *errnop);
 extern NSS_STATUS _nss_registry_finduserbyname (const char *name);
 extern NSS_STATUS _nss_registry_finduserbyuid (uid_t uid, char **name);
 extern NSS_STATUS _nss_registry_findgroupbyname (const char *name);

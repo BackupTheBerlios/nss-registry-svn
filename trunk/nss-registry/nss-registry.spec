@@ -1,5 +1,5 @@
 Name: nss-registry
-Version: 0.1
+Version: 0.3
 Release: 1
 Source:    http://download.berlios.de/nss-registry/%{name}-%{version}.tar.gz
 Group:     System Environment/Libraries

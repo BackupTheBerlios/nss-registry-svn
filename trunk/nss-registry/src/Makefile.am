@@ -7,7 +7,7 @@ INTERFACE = 2
 slibdir = @slibdir@
 debug_parms = @debug_parms@
 #not sure what the hell I need CPP flags for since there is no cpp needed?
-AM_CPPFLAGS = @CPPFLAGS@ -D_REENTRANT
+#CPPFLAGS = @CPPFLAGS@ -D_REENTRANT
 
 INCLUDES = @REGISTRY_CFLAGS@
 AM_CFLAGS = @CFLAGS@ -W -Wall -Wstrict-prototypes -Wpointer-arith -Wundef $(debug_parms)

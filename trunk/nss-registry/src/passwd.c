@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: passwd.c,v 1.5 2004/05/04 12:30:53 rayman Exp $ 
+ * $Id: passwd.c,v 1.6 2004/05/10 11:42:43 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -80,7 +80,15 @@ _nss_registry_getpwnam_r (const char *name, struct passwd *pw,
     (char *) _nss_registry_copy_to_buffer (&buffer, &buflen, name);
   if (!pw->pw_name)
     goto out_nomem;
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "password");
+  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "password",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+	/* Set errnumber to returned error number, permission denied etc */
+        _nss_registry_log (LOG_ERR, "Problem accessing password for User %s. "
+                         " Reverted to \"x\"."
+			 "Error (%d): %s",
+                         pw->pw_name, i, strerror(i));
+  }
   if (!_nss_registry_isempty (tmpbuf))
     {
       pw->pw_passwd =
@@ -98,39 +106,68 @@ _nss_registry_getpwnam_r (const char *name, struct passwd *pw,
   if (!pw->pw_passwd)
     goto out_nomem;
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "uid");
+  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "uid",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        _nss_registry_log (LOG_ERR, "Problem accessing UID for User %s."
+			 "Error (%d): %s.", 
+                         pw->pw_name,i, strerror(i));
+
+  }
   pw->pw_uid = _nss_registry_strtol (tmpbuf, FALLBACK_UID, &i);
   if (i)
     {
       _nss_registry_log (LOG_ERR, "User %s has invalid uid(%s). "
 			 " Reverted to %d. Fix you registry entries.",
-			 pw->pw_name, tmpbuf || "NULL", pw->pw_uid);
+			 pw->pw_name, tmpbuf, pw->pw_uid);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "gid");
+  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "gid",&i);
+  /* This will cause two error messages if tmpbuf == NULL sadly, but imho best way */
+  if(tmpbuf == NULL && i > 0)
+  {
+        _nss_registry_log (LOG_ERR, "Problem accessing GID for User %s."
+                         "Error (%d): %s.",
+                         pw->pw_name,i, strerror(i));
+
+  }
   pw->pw_gid = _nss_registry_strtol (tmpbuf, FALLBACK_GID, &i);
   if (i)
     {
       _nss_registry_log (LOG_ERR, "User %s has invalid gid(%s). "
 			 " Reverted to %d. Fix you registry entries.",
-			 pw->pw_name, tmpbuf || "NULL", pw->pw_gid);
+			 pw->pw_name, tmpbuf, pw->pw_gid);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "gecos");
+  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "gecos",&i);
 /* if tmpbuf is null just set it to an empty string*/
+  if(tmpbuf == NULL && i > 0)
+  {
+        _nss_registry_log (LOG_ERR, "Problem accessing gecos for User %s."
+                         "Error (%d): %s.",
+                         pw->pw_name,i, strerror(i));
+
+  }
   pw->pw_gecos = _nss_registry_copy_to_buffer (&buffer, &buflen,
 					       tmpbuf ? tmpbuf : "");
   if (tmpbuf != NULL)
     free (tmpbuf);
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "home");
+  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "home",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        _nss_registry_log (LOG_ERR, "Problem accessing home entry for User %s."
+                         "Error (%d): %s.",
+                         pw->pw_name,i, strerror(i));
+
+  }
   if (_nss_registry_isempty (tmpbuf))
     {
-      _nss_registry_log (LOG_ERR, "Empty or NULL home column for "
+      _nss_registry_log (LOG_ERR, "Empty or NULL home entry for "
 			 "user %s(%d). Falling back to " FALLBACK_TMP
 			 ". Fix your registry entries.",
 			 pw->pw_name, pw->pw_uid);
@@ -147,7 +184,14 @@ _nss_registry_getpwnam_r (const char *name, struct passwd *pw,
   if (!pw->pw_dir)
     goto out_nomem;
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "shell");
+  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "shell",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        _nss_registry_log (LOG_ERR, "Problem accessing shell entry for User %s."
+                         "Error (%d): %s.",
+                         pw->pw_name,i, strerror(i));
+
+  }
   if (_nss_registry_isempty (tmpbuf))
     {
       _nss_registry_log (LOG_ERR, "Empty or NULL shell column for "
@@ -218,6 +262,7 @@ _nss_registry_setpwent (void)
  */
   registryOpen ();
   ks = (KeySet *) malloc (sizeof (KeySet));
+  memset(ks, 0, sizeof(KeySet));
   ksInit (ks);
   ret = registryGetChildKeys ("system/users", ks, RG_O_DIR);
   if (!ret)
@@ -273,7 +318,10 @@ _nss_registry_getpwent_r (struct passwd * pw, char *buffer,
  * called without setent */
 
   if (ks == NULL)
-    return NSS_STATUS_UNAVAIL;
+  {
+   _nss_registry_setpwent();
+   /* return NSS_STATUS_UNAVAIL;*/
+  }
   if (key == NULL)
     {
       /* End of list */

@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: shadow.c,v 1.5 2004/05/04 12:30:53 rayman Exp $ 
+ * $Id: shadow.c,v 1.6 2004/05/10 11:42:43 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -81,7 +81,16 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
     goto out_nomem;
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "shadowPassword");
+    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "shadowPassword",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+	/* Only give error and return if any other error than File not found */
+	if(i != ENOENT)
+	{
+	*errnop = i;
+	return NSS_STATUS_UNAVAIL;
+	}
+  }
   if (!_nss_registry_isempty (tmpbuf))
     {
       pw->sp_pwdp =
@@ -99,14 +108,11 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
 
   if (!pw->sp_pwdp)
     goto out_nomem;
-/*tmpbuf = _nss_registry_get_string(REGISTRYUSER, pw->sp_namp,"passwdLastChange");*/
-/* It's expected to be returned in this format 
- * OK. It's a long and evil way to do this, but I don't have much choice.
- * returns last time password was changed, whether it was comment or 
- * actual password */
+
   tmpbuf = (char *) malloc (255);
   sprintf (tmpbuf, "system/users/%s/shadowPassword", pw->sp_namp);
   tmpkey = (Key *) malloc (sizeof (Key));
+  memset(tmpkey, 0, sizeof(Key));
   keyInit (tmpkey);
   keySetName (tmpkey, tmpbuf);
   registryStatKey (tmpkey);
@@ -117,47 +123,83 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
 
   tmpbuf =
     _nss_registry_get_string (REGISTRYUSER, pw->sp_namp,
-			      "passwdChangeBefore");
+			      "passwdChangeBefore",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        /* Only give error and return if any other error than File not found */
+        if(i != ENOENT)
+        {
+        *errnop = i;
+        return NSS_STATUS_UNAVAIL;
+        }
+  }
   pw->sp_min = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
   if (i)
     {
       _nss_registry_log (LOG_ERR,
 			 "User %s has invalid passwdChangeBefore (%s). "
 			 " Reverted to %d. Fix you registry entries.",
-			 pw->sp_namp, tmpbuf || "NULL", pw->sp_min);
+			 pw->sp_namp, tmpbuf, pw->sp_min);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdChangeAfter");
+    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdChangeAfter",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        /* Only give error and return if any other error than File not found */
+        if(i != ENOENT)
+        {
+        *errnop = i;
+        return NSS_STATUS_UNAVAIL;
+        }
+  }
   pw->sp_max = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
   if (i)
     {
       _nss_registry_log (LOG_ERR,
 			 "User %s has invalid passwdChangeAfter (%s). "
 			 " Reverted to %d. Fix you registry entries.",
-			 pw->sp_namp, tmpbuf || "NULL", pw->sp_max);
+			 pw->sp_namp, tmpbuf, pw->sp_max);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdWarnBefore");
+    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdWarnBefore",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        /* Only give error and return if any other error than File not found */
+        if(i != ENOENT)
+        {
+        *errnop = i;
+        return NSS_STATUS_UNAVAIL;
+        }
+  }  
   pw->sp_warn = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
   if (i)
     {
       _nss_registry_log (LOG_ERR,
 			 "User %s has invalid passwdWarnBefore (%s). "
 			 " Reverted to %d. Fix you registry entries.",
-			 pw->sp_namp, tmpbuf || "NULL", pw->sp_warn);
+			 pw->sp_namp, tmpbuf, pw->sp_warn);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
     _nss_registry_get_string (REGISTRYUSER, pw->sp_namp,
-			      "passwdDisableAfter");
+			      "passwdDisableAfter",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        /* Only give error and return if any other error than File not found */
+        if(i != ENOENT)
+        {
+        *errnop = i;
+        return NSS_STATUS_UNAVAIL;
+        }
+  }
   pw->sp_inact = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
 /* Don't warn in this case since it seems quite normal to not have that set..
  * At least on my system */
@@ -166,7 +208,16 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
 
   tmpbuf =
     _nss_registry_get_string (REGISTRYUSER, pw->sp_namp,
-			      "passwdDisabledSince");
+			      "passwdDisabledSince",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        /* Only give error and return if any other error than File not found */
+        if(i != ENOENT)
+        {
+        *errnop = i;
+        return NSS_STATUS_UNAVAIL;
+        }
+  }
   pw->sp_expire = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
 /* Don't warn in this case since it seems quite normal to not have that set..
  * At least on my system */
@@ -174,7 +225,16 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdReserved");
+    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdReserved",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        /* Only give error and return if any other error than File not found */
+        if(i != ENOENT)
+        {
+        *errnop = i;
+        return NSS_STATUS_UNAVAIL;
+        }
+  }
   pw->sp_flag = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
 /* Don't warn in this case since it seems quite normal to not have that set..
  * At least on my system */
@@ -231,12 +291,15 @@ _nss_registry_setspent (void)
  */
   registryOpen ();
   shadowks = (KeySet *) malloc (sizeof (KeySet));
+  memset(shadowks, 0, sizeof(KeySet));
   ksInit (shadowks);
   ret = registryGetChildKeys ("system/users", shadowks, RG_O_DIR);
   if (!ret)
     {
       if (shadowks->size <= 0)
 	{
+	  _nss_registry_log (LOG_ERR, "_nss_registry_setspent: No users found."
+                         "Fix your registry.");
 	  ksClose (shadowks);
 	  free (shadowks);
 	  shadowks = NULL;

@@ -47,7 +47,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@ -W -Wall -Wstrict-prototypes -Wpointer-arith -Wundef
+CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
@@ -135,7 +135,8 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 
 #again, why cpp flags when we don't use cpp?
-AM_CPPFLAGS = @CPPFLAGS@ -D_REENTRANT
+#AM_CPPFLAGS = -D_REENTRANT
+AM_CFLAGS = -W -Wall -Wstrict-prototypes -Wpointer-arith -Wundef
 DEBUGPARMS = @DEBUGPARMS@
 
 SUBDIRS = tools src

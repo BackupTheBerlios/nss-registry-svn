@@ -17,7 +17,7 @@
 */
 
 /*
- * $Id: group.c,v 1.5 2004/05/04 12:30:52 rayman Exp $ 
+ * $Id: group.c,v 1.6 2004/05/10 11:42:43 rayman Exp $ 
 */
 
 #include <stdlib.h>
@@ -56,6 +56,7 @@ NSS_STATUS _nss_registry_getgrgid_r (const gid_t gid, struct group *gr,
 				     char *buffer, size_t buflen,
 				     int *errnop);
 
+/* I really ought to implement this */
 NSS_STATUS
 _nss_registry_initgroups (const char *user, gid_t group, long *start,
 			  long int *size, gid_t * groups, long int limit,
@@ -98,11 +99,27 @@ _nss_registry_getgrnam_r (const char *name, struct group * gr,
     (char *) _nss_registry_copy_to_buffer (&buffer, &buflen, name);
   if (!gr->gr_name)
     goto out_nomem;
-  tmpbuf = _nss_registry_get_string (REGISTRYGROUP, gr->gr_name, "gid");
+
+  tmpbuf = _nss_registry_get_string (REGISTRYGROUP, gr->gr_name, "gid",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        _nss_registry_log (LOG_ERR, "Problem accessing GID for Group %s."
+                         "Error (%d): %s.",
+                         gr->gr_name, i, strerror(i));
+
+  }
   gr->gr_gid = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
   if (tmpbuf != NULL)
     free (tmpbuf);
-  tmpbuf = _nss_registry_get_string (REGISTRYGROUP, gr->gr_name, "passwd");
+  tmpbuf = _nss_registry_get_string (REGISTRYGROUP, gr->gr_name, "passwd",&i);
+  if(tmpbuf == NULL && i > 0)
+  {
+        _nss_registry_log (LOG_ERR, "Problem accessing UID for User %s."
+                         "Error (%d): %s.",
+                         gr->gr_name,i, strerror(i));
+
+  }
+
   if (_nss_registry_isempty (tmpbuf))
     {
       /* Password isn't set so set it to "x" */
@@ -218,12 +235,15 @@ _nss_registry_setgrent (void)
  */
   registryOpen ();
   groupks = (KeySet *) malloc (sizeof (KeySet));
+  memset(groupks, 0, sizeof(KeySet));
   ksInit (groupks);
   ret = registryGetChildKeys ("system/groups", groupks, RG_O_DIR);
   if (!ret)
     {
       if (groupks->size <= 0)
 	{
+	    _nss_registry_log (LOG_ERR, "No groups in tree."
+                         "Fix your registry entries.");
 	  ksClose (groupks);
 	  free (groupks);
 	  groupks = NULL;

@@ -61,12 +61,15 @@ _nss_registry_log (int err, const char *format, ...)
  * returns pointer to string containing the contents of the key.
 */
 char *
-_nss_registry_get_string (int type, char *username, char *keyname)
+_nss_registry_get_string (int type, char *username, char *keyname, int *errnop)
 {
   int ret, size;
-  Key key;
+  Key *key = NULL;
   char *value = NULL;
   char keypath[256];
+  /* Reset errno to 0 to make sure no old value lingers around */
+  *errnop = 0;
+
   if (type == REGISTRYGROUP)
     {
       snprintf (keypath, 1023, "system/groups/%s/%s", username, keyname);
@@ -77,22 +80,41 @@ _nss_registry_get_string (int type, char *username, char *keyname)
     }
 
   registryOpen ();
-  keyInit (&key);
-  keySetName (&key, keypath);
-  ret = registryGetKey (&key);
-/* Key doesn't exist. This shouldn't really happen due to the check earlier */
+  key = (Key *)malloc(sizeof(Key));
+  memset(key, 0, sizeof(Key));
+  keyInit (key);
+  keySetName (key, keypath);
+  ret = registryGetKey (key);
+/* Key doesn't exist...Or other error? */
   if (ret)
-    return NULL;
-  size = keyGetDataSize (&key);
+  {
+    *errnop = errno;
+    value = NULL;
+    goto out_exit;
+  }
+  size = keyGetDataSize (key);
 /* If size is zero or less then return NULL) */
   if (size <= 0)
-    return NULL;
+{
+    *errnop = -1;
+    value = NULL;
+    goto out_exit;
+}
 /* We only want strings! Abort otherwise */
-  if (keyGetType (&key) != RG_KEY_TYPE_STRING)
-    return NULL;
+  if (keyGetType (key) != RG_KEY_TYPE_STRING)
+  {
+	*errnop = -2;
+	value = NULL;
+	goto out_exit;
+  }
   value = (char *) malloc (size);
-  keyGetString (&key, value, size);
-  keyClose (&key);
+  keyGetString (key, value, size);
+
+/* Where to goto to get out! */
+
+  out_exit:
+  keyClose (key);
+  free(key);
   registryClose ();
   return value;
 }
@@ -285,7 +307,7 @@ _nss_registry_strtol (char *str, long fallback, int *error)
   /* sanity checks */
   if (!str)
     {
-      _nss_registry_log (LOG_ERR, "_nss_registry_strol: string pointer "
+      _nss_registry_log (LOG_ERR, "_nss_registry_strtol: string pointer "
 			 "is NULL.");
       *error = 1;
       return fallback;

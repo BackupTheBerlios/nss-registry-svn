@@ -139,9 +139,9 @@ target_alias = @target_alias@
 
 #library interface
 INTERFACE = 2
-#not sure what the hell I need CPP flags for since there is no cpp needed?
-AM_CPPFLAGS = @CPPFLAGS@ -D_REENTRANT
 
+#not sure what the hell I need CPP flags for since there is no cpp needed?
+#CPPFLAGS = @CPPFLAGS@ -D_REENTRANT
 INCLUDES = @REGISTRY_CFLAGS@
 AM_CFLAGS = @CFLAGS@ -W -Wall -Wstrict-prototypes -Wpointer-arith -Wundef $(debug_parms)
 
