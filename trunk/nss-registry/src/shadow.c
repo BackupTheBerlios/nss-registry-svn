@@ -17,8 +17,10 @@
 */
 
 /*
- * $Id: shadow.c,v 1.7 2004/05/22 13:26:28 rayman Exp $ 
+$Id$
+$Author$
 */
+
 
 #include <stdlib.h>
 #include <string.h>
