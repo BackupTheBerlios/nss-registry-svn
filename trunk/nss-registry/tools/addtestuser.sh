@@ -9,6 +9,7 @@ rg set system/users/test/gid "5000"
 rg set system/users/test/home "/"
 rg set system/users/test/shell "/bin/sh"
 rg set system/users/test/uid "5000"
+rg ln system/users/test system/users/.ByID/5000
 #shadow entries
 #md5 of password "test"
 rg set -m 0600 system/users/test/shadowPassword "$1$P9FiQ2aJ$qmGIqdjRjlawm9gNRNHEX/"
@@ -22,3 +23,4 @@ rg set -m 0600 system/users/test/passwdReserved -- "-1"
 #group entries
 rg set system/groups/test/gid "5000"
 rg set system/groups/test/passwd "x"
+rg ln system/groups/test system/groups/.ByID/5000
