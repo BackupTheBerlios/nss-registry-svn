@@ -1,4 +1,4 @@
-/* Nss-registry
+/* Nss-elektra
 *  Copyright (C) 2004 Jens Andersen <rayman@skumler.net>
 *
 *  This program is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@ $LastChangedBy$
 #include <pwd.h>
 #include <grp.h>
 #include <shadow.h>
-#include <registry.h>
+#include <kdb.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -48,8 +48,8 @@ void SetIDLink(int mode, void *pw);
 #define GROUPFLAG 0x4
 #define UPDATEFLAG 0x8
 
-#define REGISTRYUSER 0
-#define REGISTRYGROUP 1
+#define ELEKTRAUSER 0
+#define ELEKTRAGROUP 1
 /* Global variable containing the "root" key string. (i.e. default is system)*/
 char *root=NULL;
 
@@ -114,10 +114,10 @@ if(geteuid() != 0)
 
 printf("Starting...\n");
 debugprint("Options = %d\n",options);
-registryOpen();
+kdbOpen();
 addusers(options);
 addgroups(options);
-registryClose();
+kdbClose();
 return 0;
 }
 
@@ -134,7 +134,7 @@ printf("Adding User entries...\n");
 		/* Hrm..this might not be completely correct */
                 if (!(options & UPDATEFLAG))
                 {
-                        if(userexists(REGISTRYUSER, pw->pw_name))
+                        if(userexists(ELEKTRAUSER, pw->pw_name))
 			{
 				debugprint("Update flag not set and user %s already exists\n", pw->pw_name);
                                 continue;
@@ -146,7 +146,7 @@ printf("Adding User entries...\n");
 			spw = getspnam(pw->pw_name);
 		}
 		adduser(pw, spw);
-		SetIDLink(REGISTRYUSER, pw);
+		SetIDLink(ELEKTRAUSER, pw);
 		pw = NULL;
 		spw = NULL;
 	}
@@ -159,7 +159,7 @@ printf("Adding User entries...\n");
         {
 		if (!(options & UPDATEFLAG))
                 {
-                        if(userexists(REGISTRYUSER, spw->sp_namp))
+                        if(userexists(ELEKTRAUSER, spw->sp_namp))
 			{
 				debugprint("Update flag is not set and user %s already exists. Skipping\n", spw->sp_namp);
 				continue;
@@ -247,8 +247,8 @@ int ret=0;
 /* mode -1 = standard access permissions */
 if(mode == -1)
 {
-	ret = registrySetValue(keyname,value);
-	debugprint("registrySetValue key=%s , value=%s\nReturned %d\n",keyname, value, ret);
+	ret = kdbSetValue(keyname,value);
+	debugprint("kdbySetValue key=%s , value=%s\nReturned %d\n",keyname, value, ret);
 } else
 {
 /* Special Access permissions */
@@ -257,7 +257,7 @@ if(mode == -1)
 	keySetName(key, keyname);
 	keySetString(key, value);
 	keySetAccess(key, mode);
-	registrySetKey(key);
+	kdbSetKey(key);
 	keyClose(key);
 	free(key);
 }
@@ -275,14 +275,14 @@ if(options & GROUPFLAG)
 	{
                if (!(options & UPDATEFLAG))
                 {
-                        if(userexists(REGISTRYGROUP, gr->gr_name))
+                        if(userexists(ELEKTRAGROUP, gr->gr_name))
 			{
 				debugprint("Update flag is not set and group %s already exist.\n",gr->gr_name);
                                 continue;
 			}
                 }
 		addgroup(gr);
-		SetIDLink(REGISTRYGROUP, gr);
+		SetIDLink(ELEKTRAGROUP, gr);
 	}
 }
 }
@@ -341,14 +341,14 @@ int userexists(int type, const char *name)
 char keypath[1024];
 Key key;
 int ret;
-/* If it's not registrygroup then assume it's user */
-if(type == REGISTRYGROUP)
+/* If it's not elektragroup then assume it's user */
+if(type == ELEKTRAGROUP)
 	snprintf(keypath,1023,"%s/groups/%s", root, name);
 else snprintf(keypath,1023,"%s/users/%s", root, name);
 
 keyInit(&key);
 keySetName(&key,keypath);
-ret = registryGetKey(&key);
+ret = kdbGetKey(&key);
 keyClose(&key);
 if(ret == 0) return 1;
 else return 0;
@@ -373,13 +373,13 @@ char keyname[1024];
 char linkname[1024];
 int ret;
 char *errorstring=NULL;
-if(mode == REGISTRYGROUP)
+if(mode == ELEKTRAGROUP)
 {
 struct group *gr;
 gr = (struct group *)data;
 snprintf(keyname, 1023, "%s/groups/%s",root,  gr->gr_name);
 snprintf(linkname, 1023, "%s/groups/.ByID/%li",root, gr->gr_gid);
-ret = registryLink(keyname, linkname);
+ret = kdbLink(keyname, linkname);
 debugprint("Adding grouplink from %s to %s\nReturned %d\n",linkname, keyname, ret);
 if (ret != 0)
 {
@@ -387,13 +387,13 @@ if (ret != 0)
 	debugprint("Error: (%d) = %s\n",errno, errorstring);
 }
 
-} else if(mode == REGISTRYUSER)
+} else if(mode == ELEKTRAUSER)
 {
 struct passwd *pw;
 pw = (struct passwd *)data;
 snprintf(keyname, 1023, "%s/users/%s", root, pw->pw_name);
 snprintf(linkname, 1023, "%s/users/.ByID/%li",root, pw->pw_uid);
-ret = registryLink(keyname, linkname);
+ret = kdbLink(keyname, linkname);
 debugprint("Adding userlink from %s to %s\nReturned %d\n",linkname, keyname,  ret);
 if (ret != 0)
 {

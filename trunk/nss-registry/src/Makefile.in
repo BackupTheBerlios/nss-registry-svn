@@ -44,6 +44,7 @@ ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -53,6 +54,10 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -61,7 +66,11 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
+ELEKTRA_CFLAGS = @ELEKTRA_CFLAGS@
+ELEKTRA_LIBS = @ELEKTRA_LIBS@
 EXEEXT = @EXEEXT@
+F77 = @F77@
+FFLAGS = @FFLAGS@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
@@ -82,19 +91,22 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
-REGISTRY_CFLAGS = @REGISTRY_CFLAGS@
-REGISTRY_LIBS = @REGISTRY_LIBS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 
 #Version of package
 VERSION = @VERSION@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
+am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
+am__fastdepCXX_TRUE = @am__fastdepCXX_TRUE@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -134,17 +146,17 @@ INTERFACE = 2
 
 #not sure what the hell I need CPP flags for since there is no cpp needed?
 #CPPFLAGS = @CPPFLAGS@ -D_REENTRANT
-INCLUDES = @REGISTRY_CFLAGS@
+INCLUDES = @ELEKTRA_CFLAGS@
 AM_CFLAGS = @CFLAGS@ -W -Wall -Wstrict-prototypes -Wpointer-arith -Wundef $(debug_parms)
 
-slib_LTLIBRARIES = libnss_registry.la
+slib_LTLIBRARIES = libnss_elektra.la
 
-libnss_registry_la_SOURCES = lib.c passwd.c shadow.c group.c
+libnss_elektra_la_SOURCES = lib.c passwd.c shadow.c group.c
 
-noinst_HEADERS = lib.h passwd.h nss-registry.h config.h nss-shadow.h group.h
+noinst_HEADERS = lib.h passwd.h nss-elektra.h config.h nss-shadow.h group.h
 
-libnss_registry_la_LDFLAGS = -module -version-info $(INTERFACE)
-libnss_registry_la_LIBADD = @REGISTRY_LIBS@ 
+libnss_elektra_la_LDFLAGS = -module -version-info $(INTERFACE)
+libnss_elektra_la_LIBADD = @ELEKTRA_LIBS@ 
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -152,9 +164,9 @@ CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(slib_LTLIBRARIES)
 
-libnss_registry_la_DEPENDENCIES =
-am_libnss_registry_la_OBJECTS = lib.lo passwd.lo shadow.lo group.lo
-libnss_registry_la_OBJECTS = $(am_libnss_registry_la_OBJECTS)
+libnss_elektra_la_DEPENDENCIES =
+am_libnss_elektra_la_OBJECTS = lib.lo passwd.lo shadow.lo group.lo
+libnss_elektra_la_OBJECTS = $(am_libnss_elektra_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -168,12 +180,12 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-DIST_SOURCES = $(libnss_registry_la_SOURCES)
+DIST_SOURCES = $(libnss_elektra_la_SOURCES)
 HEADERS = $(noinst_HEADERS)
 
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.in Makefile.am \
 	config.h.in
-SOURCES = $(libnss_registry_la_SOURCES)
+SOURCES = $(libnss_elektra_la_SOURCES)
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -230,8 +242,8 @@ clean-slibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libnss_registry.la: $(libnss_registry_la_OBJECTS) $(libnss_registry_la_DEPENDENCIES) 
-	$(LINK) -rpath $(slibdir) $(libnss_registry_la_LDFLAGS) $(libnss_registry_la_OBJECTS) $(libnss_registry_la_LIBADD) $(LIBS)
+libnss_elektra.la: $(libnss_elektra_la_OBJECTS) $(libnss_elektra_la_DEPENDENCIES) 
+	$(LINK) -rpath $(slibdir) $(libnss_elektra_la_LDFLAGS) $(libnss_elektra_la_OBJECTS) $(libnss_elektra_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT) core *.core
@@ -472,8 +484,8 @@ uninstall-am: uninstall-info-am uninstall-slibLTLIBRARIES
 # removing all traces from libtool in the process.
 #install-data-local:
 #	$(mkinstalldirs) $(DESTDIR)$(libdir)
-#	rm $(DESTDIR)$(slibdir)/libnss_registry.la
-#	rm $(DESTDIR)$(slibdir)/libnss_registry.so
+#	rm $(DESTDIR)$(slibdir)/libnss_elektra.la
+#	rm $(DESTDIR)$(slibdir)/libnss_elektra.so
 #	mv $(DESTDIR)$(slibdir)/libnss_registry.so.$(INTERFACE).0.0 \
 #	$(DESTDIR)$(slibdir)/libnss_registry-$(VERSION).so
 #	rm $(DESTDIR)$(slibdir)/libnss_registry.so.$(INTERFACE)

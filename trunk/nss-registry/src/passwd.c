@@ -1,4 +1,4 @@
-/* Nss-registry
+/* Nss-elektra
 *  Copyright (C) 2004 Jens Andersen <rayman@skumler.net>
 *
 *  This program is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@ $Author$
 #include <errno.h>
 #include <syslog.h>
 
-#include "nss-registry.h"
+#include "nss-elektra.h"
 
 #include "passwd.h"
 #include "lib.h"
@@ -45,13 +45,13 @@ $Author$
 KeySet *ks = NULL;
 Key *key = NULL;
 
-NSS_STATUS _nss_registry_getpwuid_r (uid_t, struct passwd *, char *, size_t,
+NSS_STATUS _nss_elektra_getpwuid_r (uid_t, struct passwd *, char *, size_t,
 				     int *);
-NSS_STATUS _nss_registry_setpwent (void);
-NSS_STATUS _nss_registry_getpwent_r (struct passwd *pw, char *buffer,
+NSS_STATUS _nss_elektra_setpwent (void);
+NSS_STATUS _nss_elektra_getpwent_r (struct passwd *pw, char *buffer,
 				     size_t buflen, int *errnop);
-NSS_STATUS _nss_registry_endpwent (void);
-NSS_STATUS _nss_registry_getpwnam_r (const char *, struct passwd *, char *,
+NSS_STATUS _nss_elektra_endpwent (void);
+NSS_STATUS _nss_elektra_getpwnam_r (const char *, struct passwd *, char *,
 				     size_t, int *);
 
 
@@ -66,148 +66,148 @@ NSS_STATUS _nss_registry_getpwnam_r (const char *, struct passwd *, char *,
  */
 
 NSS_STATUS
-_nss_registry_getpwnam_r (const char *name, struct passwd *pw,
+_nss_elektra_getpwnam_r (const char *name, struct passwd *pw,
 			  char *buffer, size_t buflen, int *errnop)
 {
   int i;
   char *tmpbuf = NULL;
   *errnop = ENOENT;
 
-/* Open registry connection */
-  registryOpen ();
-  if (_nss_registry_finduserbyname (name) == NSS_STATUS_NOTFOUND)
+/* Open elektra connection */
+  kdbOpen ();
+  if (_nss_elektra_finduserbyname (name) == NSS_STATUS_NOTFOUND)
     return NSS_STATUS_NOTFOUND;
 /* Yay! the users exists, lets continue */
   pw->pw_name =
-    (char *) _nss_registry_copy_to_buffer (&buffer, &buflen, name);
+    (char *) _nss_elektra_copy_to_buffer (&buffer, &buflen, name);
   if (!pw->pw_name)
     goto out_nomem;
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "password",&i);
+  tmpbuf = _nss_elektra_get_string (ELEKTRAUSER, pw->pw_name, "password",&i);
   if(tmpbuf == NULL && i > 0)
   {
 	/* Set errnumber to returned error number, permission denied etc */
-        _nss_registry_log (LOG_ERR, "Problem accessing password for User %s. "
+        _nss_elektra_log (LOG_ERR, "Problem accessing password for User %s. "
                          " Reverted to \"x\"."
 			 "Error (%d): %s",
                          pw->pw_name, i, strerror(i));
   }
-  if (!_nss_registry_isempty (tmpbuf))
+  if (!_nss_elektra_isempty (tmpbuf))
     {
       pw->pw_passwd =
-	(char *) _nss_registry_copy_to_buffer (&buffer, &buflen, tmpbuf);
+	(char *) _nss_elektra_copy_to_buffer (&buffer, &buflen, tmpbuf);
       free (tmpbuf);
     }
   else
     {
 /* We assume shadow if tmpbuf is empty...but check if it's null and free if not */
       pw->pw_passwd =
-	(char *) _nss_registry_copy_to_buffer (&buffer, &buflen, "x");
+	(char *) _nss_elektra_copy_to_buffer (&buffer, &buflen, "x");
       if (tmpbuf != NULL)
 	free (tmpbuf);
     }
   if (!pw->pw_passwd)
     goto out_nomem;
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "uid",&i);
+  tmpbuf = _nss_elektra_get_string (ELEKTRAUSER, pw->pw_name, "uid",&i);
   if(tmpbuf == NULL && i > 0)
   {
-        _nss_registry_log (LOG_ERR, "Problem accessing UID for User %s."
+        _nss_elektra_log (LOG_ERR, "Problem accessing UID for User %s."
 			 "Error (%d): %s.", 
                          pw->pw_name,i, strerror(i));
 
   }
-  pw->pw_uid = _nss_registry_strtol (tmpbuf, FALLBACK_UID, &i);
+  pw->pw_uid = _nss_elektra_strtol (tmpbuf, FALLBACK_UID, &i);
   if (i)
     {
-      _nss_registry_log (LOG_ERR, "User %s has invalid uid(%s). "
-			 " Reverted to %d. Fix you registry entries.",
+      _nss_elektra_log (LOG_ERR, "User %s has invalid uid(%s). "
+			 " Reverted to %d. Fix you elektra entries.",
 			 pw->pw_name, tmpbuf, pw->pw_uid);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "gid",&i);
+  tmpbuf = _nss_elektra_get_string (ELEKTRAUSER, pw->pw_name, "gid",&i);
   /* This will cause two error messages if tmpbuf == NULL sadly, but imho best way */
   if(tmpbuf == NULL && i > 0)
   {
-        _nss_registry_log (LOG_ERR, "Problem accessing GID for User %s."
+        _nss_elektra_log (LOG_ERR, "Problem accessing GID for User %s."
                          "Error (%d): %s.",
                          pw->pw_name,i, strerror(i));
 
   }
-  pw->pw_gid = _nss_registry_strtol (tmpbuf, FALLBACK_GID, &i);
+  pw->pw_gid = _nss_elektra_strtol (tmpbuf, FALLBACK_GID, &i);
   if (i)
     {
-      _nss_registry_log (LOG_ERR, "User %s has invalid gid(%s). "
-			 " Reverted to %d. Fix you registry entries.",
+      _nss_elektra_log (LOG_ERR, "User %s has invalid gid(%s). "
+			 " Reverted to %d. Fix you elektra entries.",
 			 pw->pw_name, tmpbuf, pw->pw_gid);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "gecos",&i);
+  tmpbuf = _nss_elektra_get_string (ELEKTRAUSER, pw->pw_name, "gecos",&i);
 /* if tmpbuf is null just set it to an empty string*/
   if(tmpbuf == NULL && i > 0)
   {
-        _nss_registry_log (LOG_ERR, "Problem accessing gecos for User %s."
+        _nss_elektra_log (LOG_ERR, "Problem accessing gecos for User %s."
                          "Error (%d): %s.",
                          pw->pw_name,i, strerror(i));
 
   }
-  pw->pw_gecos = _nss_registry_copy_to_buffer (&buffer, &buflen,
+  pw->pw_gecos = _nss_elektra_copy_to_buffer (&buffer, &buflen,
 					       tmpbuf ? tmpbuf : "");
   if (tmpbuf != NULL)
     free (tmpbuf);
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "home",&i);
+  tmpbuf = _nss_elektra_get_string (ELEKTRAUSER, pw->pw_name, "home",&i);
   if(tmpbuf == NULL && i > 0)
   {
-        _nss_registry_log (LOG_ERR, "Problem accessing home entry for User %s."
+        _nss_elektra_log (LOG_ERR, "Problem accessing home entry for User %s."
                          "Error (%d): %s.",
                          pw->pw_name,i, strerror(i));
 
   }
-  if (_nss_registry_isempty (tmpbuf))
+  if (_nss_elektra_isempty (tmpbuf))
     {
-      _nss_registry_log (LOG_ERR, "Empty or NULL home entry for "
+      _nss_elektra_log (LOG_ERR, "Empty or NULL home entry for "
 			 "user %s(%d). Falling back to " FALLBACK_TMP
-			 ". Fix your registry entries.",
+			 ". Fix your elektra entries.",
 			 pw->pw_name, pw->pw_uid);
-      pw->pw_dir = _nss_registry_copy_to_buffer (&buffer, &buflen,
+      pw->pw_dir = _nss_elektra_copy_to_buffer (&buffer, &buflen,
 						 FALLBACK_TMP);
       if (tmpbuf != NULL)
 	free (tmpbuf);
     }
   else
     {
-      pw->pw_dir = _nss_registry_copy_to_buffer (&buffer, &buflen, tmpbuf);
+      pw->pw_dir = _nss_elektra_copy_to_buffer (&buffer, &buflen, tmpbuf);
       free (tmpbuf);
     }
   if (!pw->pw_dir)
     goto out_nomem;
 
-  tmpbuf = _nss_registry_get_string (REGISTRYUSER, pw->pw_name, "shell",&i);
+  tmpbuf = _nss_elektra_get_string (ELEKTRAUSER, pw->pw_name, "shell",&i);
   if(tmpbuf == NULL && i > 0)
   {
-        _nss_registry_log (LOG_ERR, "Problem accessing shell entry for User %s."
+        _nss_elektra_log (LOG_ERR, "Problem accessing shell entry for User %s."
                          "Error (%d): %s.",
                          pw->pw_name,i, strerror(i));
 
   }
-  if (_nss_registry_isempty (tmpbuf))
+  if (_nss_elektra_isempty (tmpbuf))
     {
-      _nss_registry_log (LOG_ERR, "Empty or NULL shell column for "
+      _nss_elektra_log (LOG_ERR, "Empty or NULL shell column for "
 			 "user %s(%d). Falling back to " FALLBACK_SHELL
-			 ". Fix your registry entries.",
+			 ". Fix your elektra entries.",
 			 pw->pw_name, pw->pw_uid);
-      pw->pw_shell = _nss_registry_copy_to_buffer (&buffer, &buflen,
+      pw->pw_shell = _nss_elektra_copy_to_buffer (&buffer, &buflen,
 						   FALLBACK_SHELL);
       if (tmpbuf != NULL)
 	free (tmpbuf);
     }
   else
     {
-      pw->pw_shell = _nss_registry_copy_to_buffer (&buffer, &buflen, tmpbuf);
+      pw->pw_shell = _nss_elektra_copy_to_buffer (&buffer, &buflen, tmpbuf);
       free (tmpbuf);
     }
   if (!pw->pw_shell)
@@ -216,7 +216,7 @@ _nss_registry_getpwnam_r (const char *name, struct passwd *pw,
 /* Woo! this means it was successfull. Go on! tell everyone :) */
 
   *errnop = 0;
-  registryClose ();
+  kdbClose ();
   return NSS_STATUS_SUCCESS;
 
 
@@ -226,73 +226,73 @@ out_nomem:
    * we return ERANGE
    */
   *errnop = ERANGE;
-  registryClose ();
+  kdbClose ();
   return NSS_STATUS_TRYAGAIN;
 
 }
 
 NSS_STATUS
-_nss_registry_getpwuid_r (uid_t uid, struct passwd * pw,
+_nss_elektra_getpwuid_r (uid_t uid, struct passwd * pw,
 			  char *buffer, size_t buflen, int *errnop)
 {
 /* I'm not sure how long a username can actually be, so...)*/
   char *username;
   NSS_STATUS tmpstatus;
-  registryOpen ();
-  if ((_nss_registry_finduserbyuid (uid, &username)) == NSS_STATUS_NOTFOUND)
+  kdbOpen ();
+  if ((_nss_elektra_finduserbyuid (uid, &username)) == NSS_STATUS_NOTFOUND)
     return NSS_STATUS_NOTFOUND;
-/* Due to the way the registry is made it's far more efficient to work with
+/* Due to the way elektra is made it's far more efficient to work with
  * usernames only, hence once we have the username for a uid we might as well 
  * just pass it on to getpwnam
  * 
  * Again, some kind of caching would be quite useful since the uid lookup is
  * quite expensive/slow.
 */
-  registryClose ();
-  tmpstatus = _nss_registry_getpwnam_r (username, pw, buffer, buflen, errnop);
+  kdbClose ();
+  tmpstatus = _nss_elektra_getpwnam_r (username, pw, buffer, buflen, errnop);
   free (username);
   return tmpstatus;
 }
 
 
 NSS_STATUS
-_nss_registry_setpwent (void)
+_nss_elektra_setpwent (void)
 {
   int ret;
-/* We need to first open registry, then get a KeySet of all keys in system/users
+/* We need to first open elektra, then get a KeySet of all keys in system/users
  * and store it globally, ready for returning the first key
  */
-  registryOpen ();
+  kdbOpen ();
   ks = (KeySet *) malloc (sizeof (KeySet));
   memset(ks, 0, sizeof(KeySet));
   ksInit (ks);
-  ret = registryGetChildKeys ("system/users", ks, RG_O_DIR);
+  ret = kdbGetChildKeys ("system/users", ks, KDB_O_DIR);
   if (!ret)
     {
       if (ks->size <= 0)
 	{
-	  _nss_registry_log (LOG_ERR, "No users in registry database!\n");
+	  _nss_elektra_log (LOG_ERR, "No users in elektra database!\n");
 	  ksClose (ks);
 	  free (ks);
 	  ks = NULL;
-	  registryClose ();
+	  kdbClose ();
 	  return NSS_STATUS_NOTFOUND;
 	}
       /* No error, return success! */
       key = ks->start;
-      registryClose ();
+      kdbClose ();
       return NSS_STATUS_SUCCESS;
     }
 
 /* If we get here it usually means that system/users doesn't exist,
  * which means this function is unavailable :) as well as the other 
  * related ones */
-  registryClose ();
+  kdbClose ();
   return NSS_STATUS_UNAVAIL;
 }
 
 NSS_STATUS
-_nss_registry_endpwent (void)
+_nss_elektra_endpwent (void)
 {
   if (ks != NULL)
     {
@@ -310,7 +310,7 @@ _nss_registry_endpwent (void)
 
 
 NSS_STATUS
-_nss_registry_getpwent_r (struct passwd * pw, char *buffer,
+_nss_elektra_getpwent_r (struct passwd * pw, char *buffer,
 			  size_t buflen, int *errnop)
 {
   Key *tempkey = NULL;
@@ -322,7 +322,7 @@ _nss_registry_getpwent_r (struct passwd * pw, char *buffer,
 
   if (ks == NULL)
   {
-   _nss_registry_setpwent();
+   _nss_elektra_setpwent();
    /* return NSS_STATUS_UNAVAIL;*/
   }
   if (key == NULL)
@@ -333,7 +333,7 @@ _nss_registry_getpwent_r (struct passwd * pw, char *buffer,
   usernamesize = keyGetBaseNameSize (key);
   username = (char *) malloc (usernamesize);
   keyGetBaseName (key, username, usernamesize);
-  tmpstatus = _nss_registry_getpwnam_r (username, pw, buffer, buflen, errnop);
+  tmpstatus = _nss_elektra_getpwnam_r (username, pw, buffer, buflen, errnop);
   free (username);
   tempkey = key;
   key = tempkey->next;

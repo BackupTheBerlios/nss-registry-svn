@@ -8,8 +8,8 @@ $LastChangedBy$
 */
 
 
-#ifndef _HAVE_NSS_REGISTRY_GROUP_H
-#define _HAVE_NSS_REGISTRY_GROUP_H
+#ifndef _HAVE_NSS_ELEKTRA_GROUP_H
+#define _HAVE_NSS_ELEKTRA_GROUP_H
 
 
-#endif /* _HAVE_NSS_REGISTRY_GROUP_H */
+#endif /* _HAVE_NSS_ELEKTRA_GROUP_H */

@@ -10,3 +10,7 @@
 * Fixed bugs regarding errorchecking when calling getspnam without proper access
 * Now logs weird errormessages regarding file access in getpw* and getgr*
 * Various other minor changes (Check cvs log)
+
+0.4: Changes:
+* Changed name to nss-elektra
+* Updated to support elektra(kdb) library instead of registry

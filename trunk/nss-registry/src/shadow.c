@@ -1,4 +1,4 @@
-/* Nss-registry
+/* Nss-elektra
 *  Copyright (C) 2004 Jens Andersen <rayman@skumler.net>
 *
 *  This program is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ $Author$
 #include <shadow.h>
 #include <stdio.h>
 
-#include "nss-registry.h"
+#include "nss-elektra.h"
 
 #include "nss-shadow.h"
 #include "lib.h"
@@ -42,13 +42,13 @@ $Author$
 KeySet *shadowks = NULL;
 Key *shadowkey = NULL;
 
-NSS_STATUS _nss_registry_getspuid_r (uid_t, struct spwd *, char *, size_t,
+NSS_STATUS _nss_elektra_getspuid_r (uid_t, struct spwd *, char *, size_t,
 				     int *);
-NSS_STATUS _nss_registry_setspent (void);
-NSS_STATUS _nss_registry_getspent_r (struct spwd *pw, char *buffer,
+NSS_STATUS _nss_elektra_setspent (void);
+NSS_STATUS _nss_elektra_getspent_r (struct spwd *pw, char *buffer,
 				     size_t buflen, int *errnop);
-NSS_STATUS _nss_registry_endspent (void);
-NSS_STATUS _nss_registry_getspnam_r (const char *, struct spwd *, char *,
+NSS_STATUS _nss_elektra_endspent (void);
+NSS_STATUS _nss_elektra_getspnam_r (const char *, struct spwd *, char *,
 				     size_t, int *);
 
 
@@ -63,7 +63,7 @@ NSS_STATUS _nss_registry_getspnam_r (const char *, struct spwd *, char *,
  */
 
 NSS_STATUS
-_nss_registry_getspnam_r (const char *name, struct spwd *pw,
+_nss_elektra_getspnam_r (const char *name, struct spwd *pw,
 			  char *buffer, size_t buflen, int *errnop)
 {
   int i;
@@ -72,18 +72,18 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
 
   *errnop = ENOENT;
 
-/* Open registry connection */
-  registryOpen ();
-  if (_nss_registry_finduserbyname (name) == NSS_STATUS_NOTFOUND)
+/* Open elektra connection */
+  kdbOpen ();
+  if (_nss_elektra_finduserbyname (name) == NSS_STATUS_NOTFOUND)
     return NSS_STATUS_NOTFOUND;
 /* Yay! the users exists, lets continue */
   pw->sp_namp =
-    (char *) _nss_registry_copy_to_buffer (&buffer, &buflen, name);
+    (char *) _nss_elektra_copy_to_buffer (&buffer, &buflen, name);
   if (!pw->sp_namp)
     goto out_nomem;
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "shadowPassword",&i);
+    _nss_elektra_get_string (ELEKTRAUSER, pw->sp_namp, "shadowPassword",&i);
   if(tmpbuf == NULL && i > 0)
   {
 	/* Only give error and return if any other error than File not found */
@@ -93,17 +93,17 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
 	return NSS_STATUS_UNAVAIL;
 	}
   }
-  if (!_nss_registry_isempty (tmpbuf))
+  if (!_nss_elektra_isempty (tmpbuf))
     {
       pw->sp_pwdp =
-	(char *) _nss_registry_copy_to_buffer (&buffer, &buflen, tmpbuf);
+	(char *) _nss_elektra_copy_to_buffer (&buffer, &buflen, tmpbuf);
       free (tmpbuf);
     }
   else
     {
 /* If password is empty, set it to ! indication no password */
       pw->sp_pwdp =
-	(char *) _nss_registry_copy_to_buffer (&buffer, &buflen, "!");
+	(char *) _nss_elektra_copy_to_buffer (&buffer, &buflen, "!");
       if (tmpbuf != NULL)
 	free (tmpbuf);
     }
@@ -117,14 +117,14 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
   memset(tmpkey, 0, sizeof(Key));
   keyInit (tmpkey);
   keySetName (tmpkey, tmpbuf);
-  registryStatKey (tmpkey);
+  kdbStatKey (tmpkey);
   pw->sp_lstchg = keyGetMTime (tmpkey) / (60 * 60 * 24);
   keyClose (tmpkey);
   free (tmpkey);
   free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp,
+    _nss_elektra_get_string (ELEKTRAUSER, pw->sp_namp,
 			      "passwdChangeBefore",&i);
   if(tmpbuf == NULL && i > 0)
   {
@@ -135,19 +135,19 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
         return NSS_STATUS_UNAVAIL;
         }
   }
-  pw->sp_min = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
+  pw->sp_min = _nss_elektra_strtol (tmpbuf, FALLBACK, &i);
   if (i)
     {
-      _nss_registry_log (LOG_ERR,
+      _nss_elektra_log (LOG_ERR,
 			 "User %s has invalid passwdChangeBefore (%s). "
-			 " Reverted to %d. Fix you registry entries.",
+			 " Reverted to %d. Fix you elektra entries.",
 			 pw->sp_namp, tmpbuf, pw->sp_min);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdChangeAfter",&i);
+    _nss_elektra_get_string (ELEKTRAUSER, pw->sp_namp, "passwdChangeAfter",&i);
   if(tmpbuf == NULL && i > 0)
   {
         /* Only give error and return if any other error than File not found */
@@ -157,19 +157,19 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
         return NSS_STATUS_UNAVAIL;
         }
   }
-  pw->sp_max = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
+  pw->sp_max = _nss_elektra_strtol (tmpbuf, FALLBACK, &i);
   if (i)
     {
-      _nss_registry_log (LOG_ERR,
+      _nss_elektra_log (LOG_ERR,
 			 "User %s has invalid passwdChangeAfter (%s). "
-			 " Reverted to %d. Fix you registry entries.",
+			 " Reverted to %d. Fix you elektra entries.",
 			 pw->sp_namp, tmpbuf, pw->sp_max);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdWarnBefore",&i);
+    _nss_elektra_get_string (ELEKTRAUSER, pw->sp_namp, "passwdWarnBefore",&i);
   if(tmpbuf == NULL && i > 0)
   {
         /* Only give error and return if any other error than File not found */
@@ -179,19 +179,19 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
         return NSS_STATUS_UNAVAIL;
         }
   }  
-  pw->sp_warn = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
+  pw->sp_warn = _nss_elektra_strtol (tmpbuf, FALLBACK, &i);
   if (i)
     {
-      _nss_registry_log (LOG_ERR,
+      _nss_elektra_log (LOG_ERR,
 			 "User %s has invalid passwdWarnBefore (%s). "
-			 " Reverted to %d. Fix you registry entries.",
+			 " Reverted to %d. Fix you elektra entries.",
 			 pw->sp_namp, tmpbuf, pw->sp_warn);
     }
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp,
+    _nss_elektra_get_string (ELEKTRAUSER, pw->sp_namp,
 			      "passwdDisableAfter",&i);
   if(tmpbuf == NULL && i > 0)
   {
@@ -202,14 +202,14 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
         return NSS_STATUS_UNAVAIL;
         }
   }
-  pw->sp_inact = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
+  pw->sp_inact = _nss_elektra_strtol (tmpbuf, FALLBACK, &i);
 /* Don't warn in this case since it seems quite normal to not have that set..
  * At least on my system */
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp,
+    _nss_elektra_get_string (ELEKTRAUSER, pw->sp_namp,
 			      "passwdDisabledSince",&i);
   if(tmpbuf == NULL && i > 0)
   {
@@ -220,14 +220,14 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
         return NSS_STATUS_UNAVAIL;
         }
   }
-  pw->sp_expire = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
+  pw->sp_expire = _nss_elektra_strtol (tmpbuf, FALLBACK, &i);
 /* Don't warn in this case since it seems quite normal to not have that set..
  * At least on my system */
   if (tmpbuf != NULL)
     free (tmpbuf);
 
   tmpbuf =
-    _nss_registry_get_string (REGISTRYUSER, pw->sp_namp, "passwdReserved",&i);
+    _nss_elektra_get_string (ELEKTRAUSER, pw->sp_namp, "passwdReserved",&i);
   if(tmpbuf == NULL && i > 0)
   {
         /* Only give error and return if any other error than File not found */
@@ -237,7 +237,7 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
         return NSS_STATUS_UNAVAIL;
         }
   }
-  pw->sp_flag = _nss_registry_strtol (tmpbuf, FALLBACK, &i);
+  pw->sp_flag = _nss_elektra_strtol (tmpbuf, FALLBACK, &i);
 /* Don't warn in this case since it seems quite normal to not have that set..
  * At least on my system */
   if (tmpbuf != NULL)
@@ -246,7 +246,7 @@ _nss_registry_getspnam_r (const char *name, struct spwd *pw,
 /* Woo! this means it was successfull. Go on! tell everyone :) */
 
   *errnop = 0;
-  registryClose ();
+  kdbClose ();
   return NSS_STATUS_SUCCESS;
 
 
@@ -256,73 +256,73 @@ out_nomem:
    * we return ERANGE
    */
   *errnop = ERANGE;
-  registryClose ();
+  kdbClose ();
   return NSS_STATUS_TRYAGAIN;
 
 }
 
 NSS_STATUS
-_nss_registry_getspuid_r (uid_t uid, struct spwd * pw,
+_nss_elektra_getspuid_r (uid_t uid, struct spwd * pw,
 			  char *buffer, size_t buflen, int *errnop)
 {
   char *username;
   NSS_STATUS tmpstatus;
-  registryOpen ();
-  if ((_nss_registry_finduserbyuid (uid, &username)) == NSS_STATUS_NOTFOUND)
+  kdbOpen ();
+  if ((_nss_elektra_finduserbyuid (uid, &username)) == NSS_STATUS_NOTFOUND)
     return NSS_STATUS_NOTFOUND;
-/* Due to the way the registry is made it's far more efficient to work with
+/* Due to the way elektra is made it's far more efficient to work with
  * usernames only, hence once we have the username for a uid we might as well 
  * just pass it on to getspnam
  *
  * Again caching would be nice (just of uid/username combination)..
  * Perhaps in the finduserbyuid function..
 */
-  registryClose ();
-  tmpstatus = _nss_registry_getspnam_r (username, pw, buffer, buflen, errnop);
+  kdbClose ();
+  tmpstatus = _nss_elektra_getspnam_r (username, pw, buffer, buflen, errnop);
   free (username);
   return tmpstatus;
 }
 
 
 NSS_STATUS
-_nss_registry_setspent (void)
+_nss_elektra_setspent (void)
 {
   int ret;
-/* We need to first open registry, then get a KeySet of all keys in system/users
+/* We need to first open elektra, then get a KeySet of all keys in system/users
  * and store it globally, ready for returning the first key
  */
-  registryOpen ();
+  kdbOpen ();
   shadowks = (KeySet *) malloc (sizeof (KeySet));
   memset(shadowks, 0, sizeof(KeySet));
   ksInit (shadowks);
-  ret = registryGetChildKeys ("system/users", shadowks, RG_O_DIR);
+  ret = kdbGetChildKeys ("system/users", shadowks, KDB_O_DIR);
   if (!ret)
     {
       if (shadowks->size <= 0)
 	{
-	  _nss_registry_log (LOG_ERR, "_nss_registry_setspent: No users found."
-                         "Fix your registry.");
+	  _nss_elektra_log (LOG_ERR, "_nss_elektra_setspent: No users found."
+                         "Fix your elektra.");
 	  ksClose (shadowks);
 	  free (shadowks);
 	  shadowks = NULL;
-	  registryClose ();
+	  kdbClose ();
 	  return NSS_STATUS_NOTFOUND;
 	}
       /* No error, return success! */
       shadowkey = shadowks->start;
-      registryClose ();
+      kdbClose ();
       return NSS_STATUS_SUCCESS;
     }
 
 /* If we get here it usually means that system/users doesn't exist,
  * which means this function is unavailable :) as well as the other 
  * related ones */
-  registryClose ();
+  kdbClose ();
   return NSS_STATUS_UNAVAIL;
 }
 
 NSS_STATUS
-_nss_registry_endspent (void)
+_nss_elektra_endspent (void)
 {
   if (shadowks != NULL)
     {
@@ -341,7 +341,7 @@ _nss_registry_endspent (void)
 
 
 NSS_STATUS
-_nss_registry_getspent_r (struct spwd * pw, char *buffer,
+_nss_elektra_getspent_r (struct spwd * pw, char *buffer,
 			  size_t buflen, int *errnop)
 {
   Key *tempkey = NULL;
@@ -361,7 +361,7 @@ _nss_registry_getspent_r (struct spwd * pw, char *buffer,
   usernamesize = keyGetBaseNameSize (shadowkey);
   username = (char *) malloc (usernamesize);
   keyGetBaseName (shadowkey, username, usernamesize);
-  tmpstatus = _nss_registry_getspnam_r (username, pw, buffer, buflen, errnop);
+  tmpstatus = _nss_elektra_getspnam_r (username, pw, buffer, buflen, errnop);
   free (username);
   tempkey = shadowkey;
   shadowkey = tempkey->next;

@@ -9,9 +9,9 @@ Else all the get??uid/getgrgid functions will not work.
 Once the installation and conversion is over you need to change your nsswitch.conf
 to tell it to use the registry database.
 you do this by change the lines to what is below:
-passwd: registry
-group: registry
-shadow: registry
+passwd: elektra
+group: elektra
+shadow: elektra
 
 (Most likely it will say either files or compat in your existing file)
 After this a restart of any services that retrieve database information is required (i.e. sshd, ftpd etc)

@@ -15,4 +15,4 @@ EXTRA_DIST = addtestuser.sh
 tools_PROGRAMS = $(TOOLS)
 toolsdir = @sbindir@
 passwdconvert_SOURCES = passwdconvert.c
-passwdconvert_LDFLAGS = -lregistry
+passwdconvert_LDFLAGS = -lkdb

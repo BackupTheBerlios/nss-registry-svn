@@ -1,5 +1,5 @@
 /*
- * nss-shadow.h for nss-registry.
+ * nss-shadow.h for nss-elektra.
 */
 
 /* Svn stuff
@@ -8,8 +8,8 @@ $LastChangedBy$
 */
 
 
-#ifndef _HAVE_NSS_REGISTRY_SHADOW_H
-#define _HAVE_NSS_REGISTRY_SHADOW_H
+#ifndef _HAVE_NSS_ELEKTRA_SHADOW_H
+#define _HAVE_NSS_ELEKTRA_SHADOW_H
 
 
-#endif /* _HAVE_NSS_REGISTRY_SHADOW_H */
+#endif /* _HAVE_NSS_ELEKTRA_SHADOW_H */
