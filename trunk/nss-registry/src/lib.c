@@ -114,42 +114,41 @@ else return NSS_STATUS_NOTFOUND;
 */
 NSS_STATUS _nss_registry_finduserbyuid(uid_t uid, char **name)
 {
-char *keypath=NULL;
-int keypathsize;
-KeySet ks;
-Key *key;
+Key key;
+char keyname[1024];
+int ret;
+/* Where to store where the link points to */
+int linksize;
+char *link;
 char *p;
-char *tuid;
-char struid[20];
-NSS_STATUS status= NSS_STATUS_NOTFOUND;
+NSS_STATUS status = NSS_STATUS_NOTFOUND;;
 
-snprintf(struid,19,"%li",uid);
-ksInit(&ks);
-/* Get all users */
-registryGetChildKeys("system/users", &ks, RG_O_DIR);
-for(key=ks.start; key; key=key->next)
+snprintf(keyname, 1023, "system/users/.ByID/%li", uid);
+keyInit(&key);
+keySetName(&key, keyname);
+ret = registryStatKey(&key);
+if(ret != 0) return NSS_STATUS_NOTFOUND;
+if(keyGetType(&key) != RG_KEY_TYPE_LINK) 
 {
-keypathsize = keyGetBaseNameSize(key);
-keypath = (char *)malloc(keypathsize);
-keyGetBaseName(key,keypath,keypathsize);
-tuid = _nss_registry_get_string(REGISTRYUSER, keypath ,"uid");
-if (tuid == NULL)
-{
-	_nss_registry_log(LOG_ERR, "Arg. tuid is NULL. This should never happen");
-	break;
+_nss_registry_log(LOG_ERR,"finduserbyuid: Error: key %s is not a link!\n",keyname);
+keyClose(&key);
+return NSS_STATUS_NOTFOUND;
 }
-if(strcmp(tuid, struid) == 0)
+/* Woo! it's a link and stuff...return basename of link */
+linksize = keyGetDataSize(&key);
+link = (char *)malloc(linksize);
+keyGetLink(&key, link, linksize);
+p = rindex(link, '/');
+if(p != NULL)
 {
-	*name = keypath;
-	status = NSS_STATUS_SUCCESS;
-	free(tuid);
-	break;
+p++;
+*name = strdup(p);
+status = NSS_STATUS_SUCCESS;
+}
+keyClose(&key);
+p = NULL;
+free(link);
 
-}
-free(keypath);
-free(tuid);
-}
-ksClose(&ks);
 return status;
 }
 
@@ -178,36 +177,41 @@ else return NSS_STATUS_NOTFOUND;
 */
 NSS_STATUS _nss_registry_findgroupbygid(gid_t gid, char **name)
 {
-char *keypath;
-int keypathsize;
-KeySet ks;
-Key *key;
+Key key;
+char keyname[1024];
+int ret;
+/* Where to store where the link points to */
+int linksize;
+char *link;
 char *p;
-char *tgid;
-char strgid[20];
-NSS_STATUS status = NSS_STATUS_NOTFOUND; 
+NSS_STATUS status = NSS_STATUS_NOTFOUND;;
 
-sprintf(strgid,"%li",gid);
-ksInit(&ks);
-/* Get all users */
-registryGetChildKeys("system/groups", &ks, RG_O_DIR);
-for(key=ks.start; key; key=key->next)
+snprintf(keyname, 1023, "system/groups/.ByID/%li", gid);
+keyInit(&key);
+keySetName(&key, keyname);
+ret = registryStatKey(&key);
+if(ret != 0) return NSS_STATUS_NOTFOUND;
+if(keyGetType(&key) != RG_KEY_TYPE_LINK)
 {
-keypathsize = keyGetBaseNameSize(key);
-keypath = (char *)malloc(keypathsize);
-keyGetBaseName(key,keypath,keypathsize);
-tgid = _nss_registry_get_string(REGISTRYGROUP, keypath ,"gid");
-if(strcmp(tgid, strgid) == 0)
+_nss_registry_log(LOG_ERR,"findgroupbyuid: Error: key %s is not a link!\n",keyname);
+keyClose(&key);
+return NSS_STATUS_NOTFOUND;
+}
+/* Woo! it's a link and stuff...return basename of link */
+linksize = keyGetDataSize(&key);
+link = (char *)malloc(linksize);
+keyGetLink(&key, link, linksize);
+p = rindex(link, '/');
+if(p != NULL)
 {
-        *name = keypath;
-        free(tgid);
-        status =  NSS_STATUS_SUCCESS;
-	break;
+p++;
+*name = strdup(p);
+status = NSS_STATUS_SUCCESS;
 }
-free(keypath);
-free(tgid);
-}
-ksClose(&ks);
+keyClose(&key);
+p = NULL;
+free(link);
+
 return status;
 }
 
