@@ -33,6 +33,8 @@
 #include <errno.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/errno.h>
 
 #include "lib.h"
 
@@ -151,19 +153,26 @@ _nss_registry_finduserbyuid (uid_t uid, char **name)
 /* Where to store where the link points to */
   int linksize;
   char *link;
+#ifdef DEBUG
+  char fullpath[1024 + 1];
+#endif
   char *p;
   NSS_STATUS status = NSS_STATUS_NOTFOUND;
 
   snprintf (keyname, 1023, "system/users/.ByID/%li", uid);
   keyInit (&key);
   keySetName (&key, keyname);
+#ifdef DEBUG
+  registryGetFilename(&key,fullpath, sizeof(fullpath));
+  _D(LOG_INFO, "Full path to key %s is %s\n", keyname, fullpath);
+#endif
   ret = registryStatKey (&key);
   if (ret != 0)
   {
-     _D(LOG_ERR, "Uid %li doesn't exist\n", uid);
+     _D(LOG_ERR, "Error accessing UID %d\nError(%d): %s\n", uid, errno, strerror(errno));
      return NSS_STATUS_NOTFOUND;
   }
-  if (keyGetType (&key) != RG_KEY_TYPE_LINK)
+  if (!keyIsLink(&key))
     {
       _nss_registry_log (LOG_ERR,
 			 "finduserbyuid: Error: key %s is not a link!\n",
@@ -233,8 +242,11 @@ _nss_registry_findgroupbygid (gid_t gid, char **name)
   keySetName (&key, keyname);
   ret = registryStatKey (&key);
   if (ret != 0)
+  {
+    _D(LOG_ERR, "findgroupbygid: Error stat'ing key %s\nError(%d) : %s\n", keyname, errno, strerror(errno));
     return NSS_STATUS_NOTFOUND;
-  if (keyGetType (&key) != RG_KEY_TYPE_LINK)
+  }
+  if (!keyIsLink(&key))
     {
       _nss_registry_log (LOG_ERR,
 			 "findgroupbyuid: Error: key %s is not a link!\n",
