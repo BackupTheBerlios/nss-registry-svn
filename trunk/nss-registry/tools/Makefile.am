@@ -6,7 +6,7 @@ AM_CFLAGS = @CFLAGS@ -W -Wall -Wstrict-prototypes -Wpointer-arith -Wundef $(debu
 
 
 TOOLS = passwdconvert
-
+EXTRA_DIST = addtestuser.sh
 
 tools_PROGRAMS = $(TOOLS)
 toolsdir = @sbindir@
