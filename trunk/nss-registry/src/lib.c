@@ -23,10 +23,9 @@ $Id$
 $LastChangedBy$ 
 */
 
-/* Not quite sure if I need this yet, but I'll leave it for now.
- * needed to use vasprintf ... 
+/* Not quite sure if I need this yet, but I'll try and remove it 
+* #define _GNU_SOURCE 1
 */
-#define _GNU_SOURCE 1
 
 #include <stdio.h>
 #include <stdarg.h>
