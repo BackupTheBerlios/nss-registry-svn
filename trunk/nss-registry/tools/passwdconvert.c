@@ -267,7 +267,7 @@ if(options & GROUPFLAG)
 	setgrent();
 	while((gr = getgrent()) != NULL)
 	{
-               if (options & ~UPDATEFLAG)
+               if (!(options & UPDATEFLAG))
                 {
                         if(userexists(REGISTRYGROUP, gr->gr_name))
 			{
